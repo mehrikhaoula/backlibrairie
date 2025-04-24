@@ -3,7 +3,7 @@ let mongoose = require("mongoose");
 let categorieShema = new mongoose.Schema({
   NomCategorie: {
     type: String,
-    required: true
+    required: false
   },
   type: {
     type: String,

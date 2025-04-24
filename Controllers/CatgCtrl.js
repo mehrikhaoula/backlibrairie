@@ -21,7 +21,10 @@ const categorieCtrl = {
     } catch (error) {
       // Gestion de l'erreur de doublon sur le champ 'type'
       if (error.code === 11000) {
-        return res.status(400).json({ error: true,  msg: `Le type '${req.body.type}' existe déjà`, success: false 
+        return res.status(400).json({
+          error: true,
+          msg: `Le type '${req.body.type}' existe déjà`,
+          success: false,
         });
       }
       // Gestion des autres erreurs
