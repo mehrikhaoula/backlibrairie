@@ -37,13 +37,20 @@ const AdminCtrl = {
             const tokenOption = {
                 httpOnly: true,
                 secure: true
-              
             };
 
+            const responsePayload= {
+                token: token,
+                admin: {
+                    id: findAdmin.id,
+                    email: findAdmin.email,
+                    name: findAdmin.name,
+                },
+            };
             // Réponse avec cookie et JSON
             res.cookie("token", token, tokenOption).status(200).json({
                 message: "Connexion réussie",
-                data: token,
+                data: responsePayload,
                 success: true,
                 error: false,
             });
