@@ -3,13 +3,13 @@ let mongoose = require("mongoose");
 let categorieShema = new mongoose.Schema({
   NomCategorie: {
     type: String,
-    required: false
+    required: false,
   },
   type: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
 });
 
-module.exports =mongoose.model('categorie', categorieShema);
+module.exports = mongoose.model("categorie", categorieShema);
