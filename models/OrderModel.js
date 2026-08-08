@@ -1,59 +1,83 @@
 const mongoose = require("mongoose");
 
-const OrderSchema = mongoose.Schema(
+const OrderSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
+      ref: "User",
     },
+
+    customer: {
+      firstName: {
+        type: String,
+        required: true,
+      },
+      lastName: {
+        type: String,
+        required: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+    },
+
     items: [
       {
         productId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "product",
+          ref: "produit",
           required: true,
         },
-        name: String,
+
+        name: {
+          type: String,
+          required: true,
+        },
+
         quantity: {
           type: Number,
           required: true,
           min: 1,
         },
+
         price: {
           type: Number,
           required: true,
         },
       },
     ],
-    shippingAddress: {
-      street: String,
-      city: String,
-      state: String,
-      zip: String,
-      country: String,
-    },
-    paymentMethod: {
-      type: String,
-      enum: ["card", "paypal", "cash"],
-      default: "cash",
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "failed"],
-      default: "pending",
-    },
-    status: {
-      type: String,
-      enum: ["pending", "confirmed", "shipped", "delivered", "cancelled"],
-      default: "pending",
-    },
+
     total: {
       type: Number,
       required: true,
     },
+
+    status: {
+      type: String,
+      enum: [
+        "En attente",
+        "Confirmée",
+        "Expédiée",
+        "Livrée",
+        "Annulée",
+      ],
+      default: "En attente",
+    },
+
+    paymentStatus: {
+      type: String,
+      default: "En attente",
+    },
+    paymentMethod: {
+      type: String,
+      default: "Espèces",
+    },
   },
   { timestamps: true }
 );
-
-module.exports = mongoose.model("order", OrderSchema);
+module.exports = mongoose.model("Order", OrderSchema);

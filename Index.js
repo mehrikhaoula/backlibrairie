@@ -48,7 +48,7 @@ const fileUploadRouter = require("./routes/fileUploadRoutes");
 
 // Register all routers under /api
 app.use("/api", userRouter);
-app.use("/api", orderRouter);
+app.use("/api/orders", orderRouter);
 app.use("/api", catgRouter);
 app.use("/api", adminRouter);
 app.use("/api", produitsRouter);
