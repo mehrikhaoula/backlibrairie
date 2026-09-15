@@ -23,7 +23,9 @@ app.use(bodyParser.json());
 app.use(
   cors({
     origin: [process.env.url_front,
-      "http://localhost:3001",],
+      "http://localhost:3001",
+    "https://client-librairie-two.vercel.app"
+  ],
     credentials: true,
   })
 );
@@ -96,7 +98,7 @@ const createAdmin = async () => {
 connectDB()
   .then(createAdmin)
   .then(() => {
-    const PORT = process.env.port || 3200;
+    const PORT = process.env.port || 3010;
     app.listen(PORT, () => {
       console.log(`🚀 Server running at http://localhost:${PORT}/`);
     });
