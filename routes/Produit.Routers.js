@@ -1,14 +1,55 @@
 let router = require("express").Router();
+
 let produitCtrl = require("../Controllers/ProduitCtrl");
 
-let auth = require("../middleware/Auth");
+let adminAuth = require("../middleware/AdminAuth");
 let permission = require("../middleware/Permission");
 
+// ============================
+// PUBLIC ROUTES
+// ============================
+
+// جميع المنتجات
 router.get("/produits", produitCtrl.getAllProduit);
-router.get("/produits/category/:category", produitCtrl.getProduitsByCategory);
-router.get("/produit/:id", produitCtrl.getProduitById);
-router.post("/produit", auth.auth, produitCtrl.createProduit);
-router.put("/produit/:id", auth.auth, produitCtrl.updateProduitById);
-router.delete("/produit/:id", auth.auth, produitCtrl.deleteProduitById);
+
+// المنتجات حسب catégorie
+router.get(
+  "/produits/category/:category",
+  produitCtrl.getProduitsByCategory
+);
+
+// produit par ID
+router.get(
+  "/produit/:id",
+  produitCtrl.getProduitById
+);
+
+// ============================
+// ADMIN PRODUCT ROUTES
+// ============================
+
+// Ajouter produit
+router.post(
+  "/produit",
+  adminAuth.auth,
+  permission.PermissionAdmin,
+  produitCtrl.createProduit
+);
+
+// Modifier produit
+router.put(
+  "/produit/:id",
+  adminAuth.auth,
+  permission.PermissionAdmin,
+  produitCtrl.updateProduitById
+);
+
+// Supprimer produit
+router.delete(
+  "/produit/:id",
+  adminAuth.auth,
+  permission.PermissionAdmin,
+  produitCtrl.deleteProduitById
+);
 
 module.exports = router;

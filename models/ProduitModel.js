@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const ProduitSchema = new mongoose.Schema({
+
   name: {
     type: String,
     required: true,
@@ -31,17 +32,21 @@ const ProduitSchema = new mongoose.Schema({
     default: "",
   },
 
-  // Pas de remise pour le moment
   discount: {
     type: Number,
     default: 0,
   },
 
-  // Stock fixe = 200
   quantite: {
     type: Number,
     default: 200,
   },
+
+  sourceUrl: {
+    type: String,
+    default: "",
+  },
+
 });
 
 module.exports = mongoose.model("produit", ProduitSchema);

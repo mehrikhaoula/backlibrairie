@@ -1,218 +1,212 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
 const mongoose = require("mongoose");
+const XLSX = require("xlsx");
+require("dotenv").config();
 
-const Product = require("./models/ProductModel");
+const Produit = require("./models/ProduitModel");
 
-// ===============================
+// =====================================
 // CONFIG
-// ===============================
+// =====================================
 
-const RAYART_URL = "https://www.rayart.com.tn/2-accueil";
+const EXCEL_FILE = "./products.xlsx";
 
-// MongoDB متاعك
-const MONGO_URI = process.env.MONGO_URI;
+// =====================================
+// SYNC EXCEL → MONGODB
+// =====================================
 
-
-// ===============================
-// تنظيف النصوص
-// ===============================
-
-function cleanText(text) {
-  return text
-    ?.replace(/\s+/g, " ")
-    .replace(/\n/g, " ")
-    .trim() || "";
-}
-
-
-// ===============================
-// استخراج prix
-// ===============================
-
-function extractPrice(text) {
-  if (!text) return 0;
-
-  const match = text
-    .replace(",", ".")
-    .match(/(\d+(?:\.\d+)?)\s*TND/);
-
-  return match ? Number(match[1]) : 0;
-}
-
-
-// ===============================
-// SCRAPE PAGE
-// ===============================
-
-async function scrapePage(page = 1) {
-
-  const url =
-    page === 1
-      ? RAYART_URL
-      : `${RAYART_URL}?page=${page}`;
-
-  console.log("\n=================================");
-  console.log("PAGE :", page);
-  console.log("URL  :", url);
-  console.log("=================================");
-
-  const response = await axios.get(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
-    },
-  });
-
-  const $ = cheerio.load(response.data);
-
-  const products = [];
-
-  $(".product-miniature").each((index, element) => {
-
-    const el = $(element);
-
-    // ===============================
-    // NAME
-    // ===============================
-
-    const name = cleanText(
-      el.find(".product-title a").text()
-    );
-
-    if (!name) return;
-
-    // ===============================
-    // PRODUCT URL
-    // ===============================
-
-    const productUrl =
-      el.find(".product-title a").attr("href") || "";
-
-    // ===============================
-    // IMAGE
-    // ===============================
-
-    let imageUrl =
-      el.find("img").attr("data-full-size-image-url") ||
-      el.find("img").attr("data-src") ||
-      el.find("img").attr("src") ||
-      "";
-
-    // تحويل URL relative → absolute
-    if (imageUrl.startsWith("/")) {
-      imageUrl = "https://www.rayart.com.tn" + imageUrl;
-    }
-
-    // ===============================
-    // PRICE
-    // ===============================
-
-    const regularPriceText = cleanText(
-      el.find(".regular-price").text()
-    );
-
-    const currentPriceText = cleanText(
-      el.find(".price").text()
-    );
-
-    let price;
-
-    if (regularPriceText) {
-      price = extractPrice(regularPriceText);
-    } else {
-      price = extractPrice(currentPriceText);
-    }
-
-    // ===============================
-    // BRAND
-    // ===============================
-
-    const brand =
-      cleanText(
-        el.find(".product-brand").text()
-      ) || "";
-
-    // ===============================
-    // CATEGORY
-    // ===============================
-
-    const category = "";
-
-    // ===============================
-    // PRODUCT
-    // ===============================
-
-    products.push({
-      name,
-
-      brand,
-
-      category,
-
-      price,
-
-      discount: 0,
-
-      oldPrice: 0,
-
-      description: "",
-
-      quantite: 200,
-
-      imageUrl,
-
-      sourceUrl: productUrl,
-    });
-
-  });
-
-  console.log(
-    `Produits trouvés : ${products.length}`
-  );
-
-  return products;
-}
-
-
-// ===============================
-// MAIN
-// ===============================
-
-async function start() {
-
+async function syncProducts() {
   try {
+    console.log("🚀 Démarrage Sync Excel → MongoDB...\n");
 
-    await mongoose.connect(MONGO_URI);
+    // ===============================
+    // CONNECT MONGODB
+    // ===============================
+
+    const mongo_url = process.env.mongo_url;
+
+    if (!mongo_url) {
+      throw new Error(
+        "❌ mongo_url introuvable dans le fichier .env"
+      );
+    }
+
+    await mongoose.connect(mongo_url);
 
     console.log("✅ MongoDB connecté");
 
-    // TEST : seulement première page
-    const products = await scrapePage(1);
+    // ===============================
+    // READ EXCEL
+    // ===============================
 
-    console.log("\n========== PRODUITS ==========\n");
+    console.log("\n📂 Lecture de products.xlsx...");
+
+    const workbook = XLSX.readFile(EXCEL_FILE);
+
+    const sheetName = workbook.SheetNames[0];
+
+    const worksheet = workbook.Sheets[sheetName];
+
+    const products = XLSX.utils.sheet_to_json(worksheet);
 
     console.log(
-      JSON.stringify(products, null, 2)
+      `📊 ${products.length} produits trouvés dans Excel`
+    );
+
+    if (!products.length) {
+      console.log("❌ Aucun produit trouvé dans Excel");
+      return;
+    }
+
+    // ===============================
+    // COUNTERS
+    // ===============================
+
+    let created = 0;
+    let updated = 0;
+    let errors = 0;
+
+    // ===============================
+    // SYNC PRODUCTS
+    // ===============================
+
+    for (const [index, product] of products.entries()) {
+      try {
+        const name = String(product.Nom || "").trim();
+
+        if (!name) {
+          console.log(
+            `⚠️ Ligne ${index + 2}: nom manquant`
+          );
+
+          errors++;
+          continue;
+        }
+
+        const category =
+          String(product.Categorie || "").trim();
+
+        if (!category) {
+          console.log(
+            `⚠️ ${name}: catégorie manquante`
+          );
+
+          errors++;
+          continue;
+        }
+
+        // ===============================
+        // DATA
+        // ===============================
+
+        const productData = {
+          name,
+
+          brand:
+            String(product.Marque || "RayArt").trim(),
+
+          category,
+
+          imageUrl:
+            String(product.ImageUrl || "").trim(),
+
+          price:
+            Number(product.Prix) || 0,
+
+          description:
+            String(product.Description || "").trim(),
+
+          discount:
+            Number(product.Remise) || 0,
+
+          quantite:
+            Number(product.Quantite) || 200,
+        };
+
+        // ===============================
+        // FIND PRODUCT
+        // ===============================
+
+        const existing = await Produit.findOne({
+          name,
+        });
+
+        // ===============================
+        // UPDATE
+        // ===============================
+
+        if (existing) {
+          await Produit.updateOne(
+            { _id: existing._id },
+            { $set: productData }
+          );
+
+          updated++;
+
+          console.log(
+            `🔄 UPDATE ${updated}/${products.length} : ${name}`
+          );
+
+        } else {
+          // ===============================
+          // CREATE
+          // ===============================
+
+          await Produit.create(productData);
+
+          created++;
+
+          console.log(
+            `🆕 CREATE ${created}/${products.length} : ${name}`
+          );
+        }
+
+      } catch (error) {
+        errors++;
+
+        console.log(
+          `❌ Erreur ligne ${index + 2}:`,
+          error.message
+        );
+      }
+    }
+
+    // ===============================
+    // SUMMARY
+    // ===============================
+
+    console.log("\n======================================");
+    console.log("📊 RÉSULTAT SYNCHRONISATION");
+    console.log("======================================");
+
+    console.log(
+      `📦 Total Excel : ${products.length}`
     );
 
     console.log(
-      `\n✅ ${products.length} produits récupérés`
+      `🆕 Créés       : ${created}`
     );
 
-    await mongoose.disconnect();
+    console.log(
+      `🔄 Mis à jour  : ${updated}`
+    );
+
+    console.log(
+      `❌ Erreurs     : ${errors}`
+    );
+
+    console.log("======================================");
 
   } catch (error) {
-
     console.error(
-      "❌ ERREUR :",
+      "\n❌ ERREUR GÉNÉRALE :",
       error.message
     );
 
+  } finally {
     await mongoose.disconnect();
 
+    console.log("\n🔌 MongoDB déconnecté");
   }
-
 }
 
-start();
+syncProducts();
