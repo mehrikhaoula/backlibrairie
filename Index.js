@@ -24,7 +24,8 @@ app.use(
   cors({
     origin: [process.env.url_front,
       "http://localhost:3001",
-    "https://client-librairie-two.vercel.app"
+      "https://client-librairie-440dyh66t-mehrikhaoulas-projects.vercel.app",
+    "https://client-librairie-two.vercel.app" 
   ],
     credentials: true,
   })
