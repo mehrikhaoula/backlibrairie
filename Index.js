@@ -20,13 +20,22 @@ mongoose.set("strictQuery", true);
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://client-librairie-440dyh66t-mehrikhaoulas-projects.vercel.app",
+  "https://client-librairie-two.vercel.app",
+];
+
 app.use(
   cors({
-    origin: [process.env.url_front,
-      "http://localhost:3001",
-      "https://client-librairie-440dyh66t-mehrikhaoulas-projects.vercel.app",
-    "https://client-librairie-two.vercel.app" 
-  ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS non autorisé"));
+      }
+    },
     credentials: true,
   })
 );
