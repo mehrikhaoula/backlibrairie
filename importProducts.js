@@ -3,12 +3,6 @@ const mongoose = require("mongoose");
 const XLSX = require("xlsx");
 const Produit = require("./models/ProduitModel");
 
-// MongoDB
-mongoose.connect(process.env.mongo_url)
-
-const mongo_url = process.env.mongo_url;
-
-// Excel
 const FILE_PATH = "./products.xlsx";
 
 async function importProducts() {
@@ -19,15 +13,15 @@ async function importProducts() {
 
     console.log("✅ MongoDB connecté");
 
-    // قراءة Excel
+    // =========================
+    // LIRE EXCEL
+    // =========================
+
     const workbook = XLSX.readFile(FILE_PATH);
 
-    // أول Sheet
     const sheetName = workbook.SheetNames[0];
-
     const sheet = workbook.Sheets[sheetName];
 
-    // تحويل Excel إلى JSON
     const rows = XLSX.utils.sheet_to_json(sheet);
 
     console.log(`📦 ${rows.length} produits trouvés dans Excel`);
@@ -37,9 +31,19 @@ async function importProducts() {
       return;
     }
 
+    // =========================
+    // CONVERTIR EXCEL → PRODUITS
+    // =========================
+
     const products = rows
       .map((row, index) => {
-        if (!row.name || !row.category || !row.price) {
+        if (
+          !row.Nom ||
+          !row.Categorie ||
+          row.Prix === undefined ||
+          row.Prix === null ||
+          row.Prix === ""
+        ) {
           console.log(
             `⚠️ Produit ligne ${index + 2} ignoré : données manquantes`
           );
@@ -48,36 +52,52 @@ async function importProducts() {
         }
 
         return {
-          name: String(row.name).trim(),
+          name: String(row.Nom).trim(),
 
-          brand: row.brand
-            ? String(row.brand).trim()
+          brand: row.Marque
+            ? String(row.Marque).trim()
             : "RayArt",
 
-          category: String(row.category).trim(),
+          category: String(row.Categorie).trim(),
 
-          price: Number(row.price),
+          price: Number(row.Prix),
 
-          description: row.description
-            ? String(row.description).trim()
+          description: row.Description
+            ? String(row.Description).trim()
             : "",
 
-          imageUrl: row.imageUrl
-            ? String(row.imageUrl).trim()
+          imageUrl: row.ImageUrl
+            ? String(row.ImageUrl).trim()
             : "",
 
-          // Toujours 0
-          discount: 0,
+          discount:
+            row.Remise !== undefined &&
+            row.Remise !== ""
+              ? Number(row.Remise)
+              : 0,
 
-          // Stock fixe
-          quantite: 200,
+          quantite:
+            row.Quantite !== undefined &&
+            row.Quantite !== ""
+              ? Number(row.Quantite)
+              : 200,
         };
       })
       .filter(Boolean);
 
-    console.log(`✅ ${products.length} produits prêts à être importés`);
+    console.log(
+      `✅ ${products.length} produits prêts à être importés`
+    );
 
-    // Insertion en une seule opération
+    if (products.length === 0) {
+      console.log("❌ Aucun produit valide à importer");
+      return;
+    }
+
+    // =========================
+    // INSERTION MONGODB
+    // =========================
+
     const result = await Produit.insertMany(products);
 
     console.log(
@@ -85,7 +105,7 @@ async function importProducts() {
     );
 
   } catch (error) {
-    console.error("❌ Erreur :", error);
+    console.error("❌ Erreur import :", error);
 
   } finally {
     await mongoose.connection.close();
