@@ -480,42 +480,156 @@ updateMyOrder: async (req, res) => {
   },
 
 
-  // ============================
-  // Update order status
-  // ============================
+// ============================
+// Update order status
+// ============================
 
-  updateOrderStatus: async (req, res) => {
-    try {
+updateOrderStatus: async (req, res) => {
+  try {
+    const { status } = req.body;
 
-      const { status } = req.body;
+    // ==========================================
+    // Vérifier le statut
+    // ==========================================
 
-      const updatedOrder =
-        await Order.findByIdAndUpdate(
-          req.params.id,
-          { status },
-          { new: true }
-        );
+    const allowedStatuses = [
+      "En attente",
+      "Confirmée",
+      "Expédiée",
+      "Livrée",
+      "Annulée",
+    ];
 
-      if (!updatedOrder) {
-        return res.status(404).json({
-          message: "Order not found"
-        });
-      }
-
-      res.json({
-        message: "Status updated successfully",
-        order: updatedOrder
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: "Statut de commande invalide.",
       });
-
-    } catch (err) {
-
-      res.status(500).json({
-        error: err.message
-      });
-
     }
-  },
 
+    // ==========================================
+    // Récupérer la commande
+    // ==========================================
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Commande introuvable.",
+      });
+    }
+
+    // ==========================================
+    // Mise à jour du statut
+    // ==========================================
+
+    order.status = status;
+
+    await order.save();
+
+    // ==========================================
+    // Telegram uniquement lors de la confirmation
+    // ==========================================
+
+    if (status === "Confirmée") {
+      const customer = order.customer || {};
+      const items = order.items || [];
+
+      const totalItems = items.reduce(
+        (sum, item) =>
+          sum + Number(item.quantity || 0),
+        0
+      );
+
+      let telegramMessage = `
+✅ *COMMANDE CONFIRMÉE*
+
+━━━━━━━━━━━━━━━━━━
+
+🆔 *COMMANDE*
+
+#${order._id.toString().slice(-8).toUpperCase()}
+
+━━━━━━━━━━━━━━━━━━
+
+👤 *CLIENT*
+
+Nom :
+${customer.firstName || ""} ${customer.lastName || ""}
+
+📞 Téléphone :
+${customer.phone || "—"}
+
+📍 Adresse :
+${customer.address || "—"}
+
+━━━━━━━━━━━━━━━━━━
+
+📦 *DÉTAIL DE LA COMMANDE*
+`;
+
+      items.forEach((item, index) => {
+        const quantity = Number(item.quantity || 1);
+        const price = Number(item.price || 0);
+        const subtotal = price * quantity;
+
+        telegramMessage += `
+
+${index + 1}. 📚 *${item.name}*
+
+🔢 Quantité : ${quantity}
+
+💰 Prix unitaire :
+${price.toFixed(2)} Dt
+
+💵 Sous-total :
+${subtotal.toFixed(2)} Dt
+`;
+      });
+
+      telegramMessage += `
+
+━━━━━━━━━━━━━━━━━━
+
+📦 Nombre d'articles :
+${totalItems}
+
+💳 *TOTAL :
+${Number(order.total || 0).toFixed(2)} Dt*
+
+━━━━━━━━━━━━━━━━━━
+
+🟢 *STATUT : CONFIRMÉE*
+
+✅ Commande validée par l'administration.
+`;
+
+      // ==========================================
+      // Envoi Telegram
+      // ==========================================
+
+      await sendTelegramMessage(telegramMessage);
+    }
+
+    // ==========================================
+    // Response
+    // ==========================================
+
+    res.json({
+      message: "Statut de la commande mis à jour avec succès.",
+      order,
+    });
+
+  } catch (err) {
+    console.error(
+      "❌ Erreur modification statut commande :",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+},
 
   // ============================
   // Delete order

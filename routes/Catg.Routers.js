@@ -67,6 +67,12 @@ router.get(
   "/typecategorie",
   categorieCtrl.getCategByType
 );
+router.post(
+  "/init-categories",
+  adminAuth.auth,
+  permission.PermissionAdmin,
+  categorieCtrl.initCategories
+);
 
 module.exports = router;
 

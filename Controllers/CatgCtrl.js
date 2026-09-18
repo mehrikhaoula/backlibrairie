@@ -32,6 +32,57 @@ const categorieCtrl = {
         msg: error.message || 'Erreur serveur', success: false, error: true });
     }
   },
+
+  initCategories: async (req, res) => {
+  try {
+    const Produit = require("../models/ProduitModel");
+
+    // Récupérer les catégories uniques des produits
+    const categories = await Produit.distinct("category");
+
+    let created = 0;
+
+    for (const category of categories) {
+      if (!category || !category.trim()) continue;
+
+      const cleanCategory = category.trim();
+
+      // Vérifier si la catégorie existe déjà
+      const exists = await categorie.findOne({
+        type: cleanCategory,
+      });
+
+      if (!exists) {
+        await categorie.create({
+          NomCategorie: cleanCategory,
+          type: cleanCategory,
+        });
+
+        created++;
+        console.log(`✅ Catégorie créée : ${cleanCategory}`);
+      }
+    }
+
+    const allCategories = await categorie.find();
+
+    res.json({
+      success: true,
+      error: false,
+      message: `${created} catégories créées avec succès`,
+      total: allCategories.length,
+      data: allCategories,
+    });
+  } catch (error) {
+    console.error("❌ INIT CATEGORIES:", error);
+
+    res.status(500).json({
+      success: false,
+      error: true,
+      message: error.message,
+    });
+  }
+},
+
   supprimercatg:async(req,res)=>{
     try {
         let {id}=req.params
