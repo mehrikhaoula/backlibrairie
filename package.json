@@ -8,7 +8,6 @@
     "start": "node Index.js",
     "import": "node importProducts.js",
     "rayart": "node rayartToExcel.js"
-    
   },
   "author": "",
   "license": "ISC",
@@ -31,6 +30,7 @@
     "multer": "^2.0.1",
     "node-telegram-bot-api": "^1.2.0",
     "node.js": "^0.0.1-security",
+    "nodemailer": "^10.0.10",
     "run": "^1.5.0",
     "start": "^5.1.0",
     "xlsx": "^0.18.5"

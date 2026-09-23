@@ -34,7 +34,17 @@ const UserSchema = mongoose.Schema(
       default: null,
     },
 
-    // Pour Google OAuth
+    resetPasswordCode: {
+  type: String,
+  default: null,
+},
+
+resetPasswordExpires: {
+  type: Date,
+  default: null,
+},
+
+    // // Pour Google OAuth
     googleId: {
       type: String,
       unique: true,

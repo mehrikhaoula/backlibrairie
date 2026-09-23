@@ -222,39 +222,37 @@ getMostOrderedProducts: async (req, res) => {
 
     // Le model "product" existe déjà
     // puisque OrderSchema utilise ref: "product"
-    const Product = require("mongoose").model("product");
+    const Produit = require("mongoose").model("produit");
 
-    const products = await Product.find({
-      _id: {
-        $in: productIds,
-      },
-    });
+const produits = await Produit.find({
+  _id: {
+    $in: productIds,
+  },
+});
 
     // ==========================================
     // Garder l'ordre du classement
     // ==========================================
 
-    const rankedProducts = mostOrdered
-      .map((orderedProduct) => {
-        const product = products.find(
-          (p) =>
-            p._id.toString() ===
-            orderedProduct._id.toString()
-        );
+   const rankedProducts = mostOrdered
+  .map((orderedProduct) => {
+    const produit = produits.find(
+      (p) =>
+        p._id.toString() ===
+        orderedProduct._id.toString()
+    );
 
-        if (!product) {
-          return null;
-        }
+    if (!produit) {
+      return null;
+    }
 
-        return {
-          ...product.toObject(),
+    return {
+      ...produit.toObject(),
 
-          // Nombre total commandé
-          totalOrdered:
-            orderedProduct.totalOrdered,
-        };
-      })
-      .filter(Boolean);
+      totalOrdered: orderedProduct.totalOrdered,
+    };
+  })
+  .filter(Boolean);
 
     // ==========================================
     // Response

@@ -15,6 +15,13 @@ router.post("/user/register", userController.register);
 router.post("/user/login", userController.login);
 
 // ============================
+// Forgot Password
+// ============================
+router.post("/user/forgot-password", userController.forgotPassword );
+router.post("/user/verify-reset-code", userController.verifyResetCode );
+router.post("/user/reset-password", userController.resetPassword );
+
+// ============================
 // Admin - Users
 // ============================
 
