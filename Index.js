@@ -12,6 +12,7 @@ const path = require("path");
 
 // App initialization
 const app = express();
+app.set("trust proxy", 1);
 
 // MongoDB Configuration
 mongoose.set("strictQuery", true);

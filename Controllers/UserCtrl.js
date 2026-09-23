@@ -186,14 +186,25 @@ const userCtrl = {
         }
       );
 
-      // Cookie
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 24 * 60 * 60 * 1000,
-      });
+      // ============================
+// COOKIE AUTHENTIFICATION
+// ============================
+
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  process.env.RENDER === "true";
+
+res.cookie("token", token, {
+  httpOnly: true,
+
+  secure: isProduction,
+
+  sameSite: isProduction ? "none" : "lax",
+
+  maxAge: 2 * 60 * 60 * 1000,
+
+  path: "/",
+});
 
       return res.status(200).json({
         message: "Connexion réussie.",
