@@ -95,6 +95,26 @@ const userCtrl = {
       });
 
       await newUser.save();
+    // ============================
+    // CREATE USER JWT
+    // ============================
+       const token = jwt.sign(
+  { id: newUser._id,},
+  SECRET,
+  { expiresIn: "1d", }
+);
+
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  process.env.RENDER === "true";
+
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 2 * 60 * 60 * 1000,
+  path: "/",
+});
 
       return res.status(201).json({
         message: "Compte créé avec succès.",
@@ -232,7 +252,10 @@ res.cookie("token", token, {
   // FORGOT PASSWORD
   // ============================
   forgotPassword: async (req, res) => {
-    try {
+  try {
+    console.log("========== FORGOT PASSWORD ==========");
+    console.log("BODY:", req.body);
+
       const { method, identifier } = req.body;
 
       if (!method || !identifier) {
@@ -359,13 +382,16 @@ res.cookie("token", token, {
           "Un code de vérification a été envoyé à votre adresse email.",
       });
     } catch (err) {
-      console.error("FORGOT PASSWORD ERROR:", err);
+  console.error("========== FORGOT PASSWORD ERROR ==========");
+  console.error(err);
+  console.error("MESSAGE:", err.message);
+  console.error("STACK:", err.stack);
 
-      return res.status(500).json({
-        success: false,
-        message: "Erreur lors de l'envoi du code.",
-      });
-    }
+  return res.status(500).json({
+    success: false,
+    message: err.message,
+  });
+}
   },
 
   // ============================
