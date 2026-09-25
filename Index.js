@@ -44,13 +44,9 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
-      console.log("❌ CORS bloqué pour :", origin);
       return callback(new Error(`CORS non autorisé: ${origin}`));
     },
-
     credentials: true,
-
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 
     allowedHeaders: [
