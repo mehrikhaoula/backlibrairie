@@ -2,6 +2,15 @@ const Admin = require("../models/AdminModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 2 * 60 * 60 * 1000,
+};
+
 const AdminCtrl = {
   // ============================
   // ADMIN LOGIN
@@ -63,17 +72,13 @@ const AdminCtrl = {
       // ADMIN COOKIE
       // ============================
 
-      res.cookie("adminToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 2 * 60 * 60 * 1000,
-      });
+      res.cookie("adminToken", token, cookieOptions);
 
       console.log("================================");
       console.log("🔐 ADMIN LOGIN");
       console.log("👤 ADMIN:", findAdmin.email);
       console.log("🎫 adminToken créé ✅");
+      console.log("🍪 COOKIE OPTIONS:", cookieOptions);
       console.log("================================");
 
       return res.status(200).json({
@@ -110,8 +115,8 @@ const AdminCtrl = {
     try {
       res.clearCookie("adminToken", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
       });
 
       return res.status(200).json({
