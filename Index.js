@@ -24,21 +24,39 @@ app.use(bodyParser.json());
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://client-librairie-440dyh66t-mehrikhaoulas-projects.vercel.app",
+
+  // Client production
   "https://client-librairie-two.vercel.app",
+
+  // Admin production
+  "https://librairie-admin.vercel.app",
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ CORS bloqué pour :", origin);
-        callback(new Error("CORS non autorisé"));
+      // يسمح بالطلبات اللي ما عندهاش Origin
+      // مثل بعض requests الداخلية
+      if (!origin) {
+        return callback(null, true);
       }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log("❌ CORS bloqué pour :", origin);
+      return callback(new Error(`CORS non autorisé: ${origin}`));
     },
+
     credentials: true,
+
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
